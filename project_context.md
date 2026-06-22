@@ -1,0 +1,20 @@
+# Project Context: Candidate Intelligence Agent
+
+## M1 Foundation
+Established project setup with Next.js 15, Zustand store, and responsive dark-theme shell.
+
+## M2 Agent Configuration Engine
+Implemented recruiter persona and strategy generation.
+
+## M3 Candidate Intelligence Engine
+Implemented deterministic message analysis (observations, inferences, hypotheses, scoring updates).
+
+## M4 Planner Engine
+Added planner architecture.
+Planner now determines:
+* current objective
+* missing information
+* next action
+* confidence
+
+Planner executes before language generation.
