@@ -218,6 +218,8 @@ const mockActionExplanation: ActionExplanation = {
   goal: "Schedule initial technical screening with Alex Rivera",
   reasoning: "Confirming Alex's hands-on experience with hardware-in-the-loop testing will validate our roleFit hypothesis. Addressing this early avoids wasting cycles later.",
   expectedOutcome: "Alex accepts a 30-minute introductory call, and we resolve his on-site lab expectations.",
+  confidence: 90,
+  confidenceFactors: ["High role fit (94%)", "Strong readiness for startup environment"],
 };
 
 export const useAppStore = create<AppState>((set) => ({

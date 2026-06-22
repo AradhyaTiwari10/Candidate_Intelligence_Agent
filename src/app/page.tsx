@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useAppStore, sampleCompanies } from "@/stores/useAppStore";
+import { AgentInsightPanel } from "@/features/explainability-ui/agent-insight-panel";
 import {
   Bot,
   Building2,
@@ -37,6 +38,8 @@ export default function Dashboard() {
     messages,
     journalEntries,
     actionExplanation,
+    activeReasoningTrace,
+    activeConfidenceResult,
     setActiveCandidateId,
     addMessage,
     addJournalEntry,
@@ -648,29 +651,13 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Action Explanation Card */}
-              {actionExplanation && (
-                <div className="bg-[#0E121B]/40 border border-slate-800/80 rounded-2xl p-5 space-y-3.5">
-                  <h3 className="text-xs uppercase font-bold text-slate-400 tracking-wider border-b border-slate-900 pb-3 flex items-center gap-2">
-                    <Brain className="h-4 w-4 text-emerald-400" />
-                    Action Explanation (Explainability)
-                  </h3>
-                  <div className="space-y-3">
-                    <div>
-                      <span className="text-[10px] text-slate-500 font-semibold uppercase">Immediate Goal</span>
-                      <p className="text-xs text-slate-200 mt-0.5">{actionExplanation.goal}</p>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-500 font-semibold uppercase">Rationale</span>
-                      <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{actionExplanation.reasoning}</p>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-500 font-semibold uppercase">Expected Outcome</span>
-                      <p className="text-xs text-emerald-400 mt-0.5">{actionExplanation.expectedOutcome}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Agent Insight Panel (Timeline, Confidence, Explanation) */}
+              <AgentInsightPanel
+                explanation={actionExplanation}
+                trace={activeReasoningTrace}
+                confidence={activeConfidenceResult}
+              />
+
 
               {/* Agent Journal Thinking Stream */}
               <div className="bg-[#0E121B]/80 border border-slate-800/80 rounded-2xl p-5 space-y-4">

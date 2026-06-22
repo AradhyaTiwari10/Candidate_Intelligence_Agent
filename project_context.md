@@ -37,3 +37,8 @@ Explainability now sits between planning and language generation.
 Added confidence scoring.
 Every planner decision now exposes certainty levels.
 
+## M7 Reasoning Timeline UI
+Added visual explainability layer.
+Agent reasoning now visible to users.
+
+
