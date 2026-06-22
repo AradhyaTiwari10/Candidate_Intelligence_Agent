@@ -40,6 +40,7 @@ export default function Dashboard() {
     actionExplanation,
     activeReasoningTrace,
     activeConfidenceResult,
+    generatedResponse,
     setActiveCandidateId,
     addMessage,
     addJournalEntry,
@@ -657,6 +658,30 @@ export default function Dashboard() {
                 trace={activeReasoningTrace}
                 confidence={activeConfidenceResult}
               />
+
+              {/* Generated Recruiter Response Card */}
+              {generatedResponse && (
+                <div className="bg-[#0E121B]/80 border border-violet-500/20 rounded-2xl p-5 space-y-4 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 h-32 w-32 bg-violet-500/5 rounded-full blur-[80px]"></div>
+                  <div className="flex items-center justify-between border-b border-slate-900 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-violet-400 animate-pulse" />
+                      <span className="text-xs uppercase font-bold text-slate-300 tracking-wider">
+                        Generated Recruiter Response
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-violet-500/10 border border-violet-500/20 text-violet-400 px-2 py-0.5 rounded font-bold">
+                      LLM VERIFIED
+                    </span>
+                  </div>
+                  <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-200 leading-relaxed font-mono whitespace-pre-wrap select-all cursor-pointer hover:border-slate-700 transition-colors">
+                    {generatedResponse}
+                  </div>
+                  <p className="text-[10px] text-slate-500 italic">
+                    Tip: Click message text to select all for copy/outreach.
+                  </p>
+                </div>
+              )}
 
 
               {/* Agent Journal Thinking Stream */}

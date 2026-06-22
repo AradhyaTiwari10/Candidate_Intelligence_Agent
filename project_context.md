@@ -51,6 +51,11 @@ Added behavior layer between planning and language generation.
 Planner determines action.
 Strategy engine determines communication style.
 
+## M8 E8.3 Response Generation Pipeline
+Introduced LLM response generation with validation and fallback protections.
+Connected planning, strategy, prompt builder, Groq execution, and UI output logs.
+
+
 
 
 

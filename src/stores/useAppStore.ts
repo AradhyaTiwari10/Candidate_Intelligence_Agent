@@ -18,6 +18,7 @@ import { generateReasoningTrace } from "@/features/explainability/reasoning-trac
 import { ReasoningTrace } from "@/features/explainability/explanation-result";
 import { ConfidenceResult } from "@/features/confidence/confidence-result";
 import { calculateConfidence } from "@/features/confidence/confidence-engine";
+import { runResponsePipeline } from "@/features/response/response-pipeline";
 
 
 interface AppState {
@@ -31,6 +32,7 @@ interface AppState {
    actionExplanation: ActionExplanation | null;
   activeReasoningTrace: ReasoningTrace | null;
   activeConfidenceResult: ConfidenceResult | null;
+  generatedResponse: string | null;
 
   // Actions
   setCompanyContext: (context: CompanyContext) => void;
@@ -49,7 +51,7 @@ interface AppState {
   bootstrapAgent: (context: CompanyContext) => void;
 
   // Milestone 3 & 4 & 5 actions implementation
-  processCandidateMessage: (candidateId: string, message: string) => void;
+  processCandidateMessage: (candidateId: string, message: string) => Promise<void>;
 
   // Milestone 7 actions implementation
   generateExplanation: () => void;
@@ -233,6 +235,7 @@ export const useAppStore = create<AppState>((set) => ({
   actionExplanation: mockActionExplanation,
   activeReasoningTrace: null,
   activeConfidenceResult: null,
+  generatedResponse: null,
 
   setCompanyContext: (companyContext) => set({ companyContext }),
   setRecruiterPersona: (recruiterPersona) => set({ recruiterPersona }),
@@ -276,6 +279,7 @@ export const useAppStore = create<AppState>((set) => ({
         actionExplanation: null,
         activeReasoningTrace: null,
         activeConfidenceResult: null,
+        generatedResponse: null,
         messages: [
           {
             id: `msg-bootstrap-${Date.now()}`,
@@ -288,80 +292,93 @@ export const useAppStore = create<AppState>((set) => ({
     }),
 
   // Milestone 3 & 4 & 5 actions implementation
-  processCandidateMessage: (candidateId, message) =>
-    set((store) => {
-      const candidate = store.candidates.find((c) => c.id === candidateId);
-      if (!candidate) return {};
+  processCandidateMessage: async (candidateId, message) => {
+    const store = useAppStore.getState();
+    const candidate = store.candidates.find((c) => c.id === candidateId);
+    if (!candidate) return;
 
-      // Build AgentState snapshot
-      const agentState: AgentState = {
-        companyContext: store.companyContext,
-        recruiterPersona: store.recruiterPersona,
-        candidateIntelligence: candidate,
-        plannerState: store.plannerState || {
-          stage: "DISCOVERY",
-          currentObjective: "Understand motivations",
-          missingInformation: [],
-          reasoning: "",
-          nextAction: "",
-          confidence: 70,
-        },
-        conversationHistory: store.messages,
-      };
+    // Build AgentState snapshot
+    const agentState: AgentState = {
+      companyContext: store.companyContext,
+      recruiterPersona: store.recruiterPersona,
+      candidateIntelligence: candidate,
+      plannerState: store.plannerState || {
+        stage: "DISCOVERY",
+        currentObjective: "Understand motivations",
+        missingInformation: [],
+        reasoning: "",
+        nextAction: "",
+        confidence: 70,
+      },
+      conversationHistory: store.messages,
+    };
 
-      // Run ORPA cycle (Observe -> Reason -> Plan -> Act) through the Orchestrator
-      const executionResult = runOrchestrator(message, agentState);
-      const {
-        observations,
-        inferences,
-        hypotheses,
-        plannerUpdates,
-        selectedAction,
-        journalEntry,
-        updatedCandidate,
-      } = executionResult;
+    // Run ORPA cycle (Observe -> Reason -> Plan -> Act) through the Orchestrator
+    const executionResult = runOrchestrator(message, agentState);
+    const {
+      observations,
+      inferences,
+      hypotheses,
+      plannerUpdates,
+      selectedAction,
+      journalEntry,
+      updatedCandidate,
+    } = executionResult;
 
-      // Compile ActionExplanation, ReasoningTrace and Confidence
-      const reasoningTrace = generateReasoningTrace(executionResult);
-      const confidenceResult = calculateConfidence(updatedCandidate, plannerUpdates, reasoningTrace);
-      const explanation = generateActionExplanation(
-        updatedCandidate,
-        plannerUpdates,
-        selectedAction,
-        confidenceResult.confidence,
-        confidenceResult.confidenceFactors
-      );
+    // Compile ActionExplanation, ReasoningTrace and Confidence
+    const reasoningTrace = generateReasoningTrace(executionResult);
+    const confidenceResult = calculateConfidence(updatedCandidate, plannerUpdates, reasoningTrace);
+    const explanation = generateActionExplanation(
+      updatedCandidate,
+      plannerUpdates,
+      selectedAction,
+      confidenceResult.confidence,
+      confidenceResult.confidenceFactors
+    );
 
-      // Add messages
-      const userMessage: ConversationMessage = {
-        id: `msg-usr-${Date.now()}`,
-        role: "candidate",
-        content: message,
-        timestamp: new Date().toISOString(),
-      };
+    // Run Response Pipeline
+    const generationInput = {
+      companyContext: store.companyContext!,
+      recruiterPersona: store.recruiterPersona!,
+      candidateIntelligence: updatedCandidate,
+      plannerState: plannerUpdates,
+      selectedAction,
+      conversationHistory: store.messages,
+    };
 
-      const agentReply: ConversationMessage = {
-        id: `msg-agent-${Date.now() + 1}`,
-        role: "assistant",
-        content: `Orchestrator qualification complete. Stage: ${plannerUpdates.stage}. Selected Action: ${selectedAction}. Objective: ${plannerUpdates.currentObjective}.`,
-        timestamp: new Date().toISOString(),
-      };
+    const responseResult = await runResponsePipeline(generationInput);
 
-      // Update candidates list
-      const updatedCandidates = store.candidates.map((c) =>
-        c.id === candidateId ? updatedCandidate : c
-      );
+    // Add messages
+    const userMessage: ConversationMessage = {
+      id: `msg-usr-${Date.now()}`,
+      role: "candidate",
+      content: message,
+      timestamp: new Date().toISOString(),
+    };
 
-      return {
-        candidates: updatedCandidates,
-        plannerState: plannerUpdates,
-        actionExplanation: explanation,
-        activeReasoningTrace: reasoningTrace,
-        activeConfidenceResult: confidenceResult,
-        journalEntries: [journalEntry, ...store.journalEntries],
-        messages: [...store.messages, userMessage, agentReply],
-      };
-    }),
+    const agentReply: ConversationMessage = {
+      id: `msg-agent-${Date.now() + 1}`,
+      role: "assistant",
+      content: responseResult.message,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Update candidates list
+    const updatedCandidates = store.candidates.map((c) =>
+      c.id === candidateId ? updatedCandidate : c
+    );
+
+    useAppStore.setState({
+      candidates: updatedCandidates,
+      plannerState: plannerUpdates,
+      actionExplanation: explanation,
+      activeReasoningTrace: reasoningTrace,
+      activeConfidenceResult: confidenceResult,
+      generatedResponse: responseResult.message,
+      journalEntries: [journalEntry, ...store.journalEntries],
+      messages: [...store.messages, userMessage, agentReply],
+    });
+  },
 
   // Milestone 7 actions implementation
   generateExplanation: () =>
