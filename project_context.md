@@ -46,5 +46,11 @@ Introduced provider abstraction layer.
 Application now communicates through GenerationService.
 Groq implementation isolated behind GroqClient.
 
+## M8 E8.2 Message Strategy Engine
+Added behavior layer between planning and language generation.
+Planner determines action.
+Strategy engine determines communication style.
+
+
 
 

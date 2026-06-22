@@ -5,5 +5,6 @@ export interface PromptContext {
   readonly plannerStateBlock: string;
   readonly selectedActionBlock: string;
   readonly expectedOutcomeBlock: string;
+  readonly communicationStrategyBlock: string;
   readonly fullPrompt: string;
 }

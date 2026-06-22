@@ -1,5 +1,6 @@
 import { GenerationInput } from "./generation-input";
 import { PromptContext } from "./prompt-context";
+import { buildStrategy } from "../strategy/strategy-builder";
 
 export function buildPrompt(input: GenerationInput): PromptContext {
   const company = input.companyContext;
@@ -60,6 +61,14 @@ REASONING: ${planner.reasoning}`;
 
   const expectedOutcomeBlock = `EXPECTED OUTCOME: ${expectedOutcome}`;
 
+  const strategy = buildStrategy(candidate, planner, action);
+  const communicationStrategyBlock = `Strategy: ${strategy.strategy}
+Rules:
+${strategy.communicationRules.map((r) => `* ${r}`).join("\n")}
+Avoid:
+${strategy.forbiddenPatterns.map((f) => `* ${f}`).join("\n")}
+Expected Outcome: ${strategy.expectedOutcome}`;
+
   // Assemble full prompt
   const fullPrompt = `# WHO AM I?
 ${recruiterPersonaBlock}
@@ -71,6 +80,9 @@ ${candidateIntelligenceBlock}
 
 # WHAT IS MY GOAL?
 ${plannerStateBlock}
+
+# COMMUNICATION STRATEGY
+${communicationStrategyBlock}
 
 # WHAT SHOULD I DO?
 ${selectedActionBlock}
@@ -88,6 +100,7 @@ ${expectedOutcomeBlock}
     plannerStateBlock,
     selectedActionBlock,
     expectedOutcomeBlock,
+    communicationStrategyBlock,
     fullPrompt,
   };
 }
