@@ -19,6 +19,9 @@ import { ReasoningTrace } from "@/features/explainability/explanation-result";
 import { ConfidenceResult } from "@/features/confidence/confidence-result";
 import { calculateConfidence } from "@/features/confidence/confidence-engine";
 import { runResponsePipeline } from "@/features/response/response-pipeline";
+import { MemoryRecord } from "@/features/memory/memory-record";
+import { extractMemory } from "@/features/memory/memory-extractor";
+import { deduplicateRecords, filterMemoryByCandidate } from "@/features/memory/memory-store";
 
 
 interface AppState {
@@ -33,6 +36,7 @@ interface AppState {
   activeReasoningTrace: ReasoningTrace | null;
   activeConfidenceResult: ConfidenceResult | null;
   generatedResponse: string | null;
+  conversationMemories: readonly MemoryRecord[];
 
   // Actions
   setCompanyContext: (context: CompanyContext) => void;
@@ -236,6 +240,7 @@ export const useAppStore = create<AppState>((set) => ({
   activeReasoningTrace: null,
   activeConfidenceResult: null,
   generatedResponse: null,
+  conversationMemories: [],
 
   setCompanyContext: (companyContext) => set({ companyContext }),
   setRecruiterPersona: (recruiterPersona) => set({ recruiterPersona }),
@@ -280,6 +285,7 @@ export const useAppStore = create<AppState>((set) => ({
         activeReasoningTrace: null,
         activeConfidenceResult: null,
         generatedResponse: null,
+        conversationMemories: [],
         messages: [
           {
             id: `msg-bootstrap-${Date.now()}`,
@@ -336,6 +342,11 @@ export const useAppStore = create<AppState>((set) => ({
       confidenceResult.confidenceFactors
     );
 
+    // Extract and merge conversation memory
+    const newMemories = extractMemory(candidateId, message);
+    const updatedMemories = deduplicateRecords(store.conversationMemories, newMemories);
+    const candidateMemories = filterMemoryByCandidate(updatedMemories, candidateId);
+
     // Run Response Pipeline
     const generationInput = {
       companyContext: store.companyContext!,
@@ -344,6 +355,7 @@ export const useAppStore = create<AppState>((set) => ({
       plannerState: plannerUpdates,
       selectedAction,
       conversationHistory: store.messages,
+      conversationMemories: candidateMemories,
     };
 
     const responseResult = await runResponsePipeline(generationInput);
@@ -377,6 +389,7 @@ export const useAppStore = create<AppState>((set) => ({
       generatedResponse: responseResult.message,
       journalEntries: [journalEntry, ...store.journalEntries],
       messages: [...store.messages, userMessage, agentReply],
+      conversationMemories: updatedMemories,
     });
   },
 

@@ -5,6 +5,7 @@ import {
   PlannerState,
   ConversationMessage,
 } from "@/types";
+import { MemoryRecord } from "../memory/memory-record";
 
 export interface GenerationInput {
   readonly companyContext: CompanyContext | null;
@@ -13,4 +14,5 @@ export interface GenerationInput {
   readonly plannerState: PlannerState;
   readonly selectedAction: string;
   readonly conversationHistory: readonly ConversationMessage[];
+  readonly conversationMemories?: readonly MemoryRecord[];
 }

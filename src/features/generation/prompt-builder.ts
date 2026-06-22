@@ -1,6 +1,7 @@
 import { GenerationInput } from "./generation-input";
 import { PromptContext } from "./prompt-context";
 import { buildStrategy } from "../strategy/strategy-builder";
+import { buildMemoryBlock } from "../memory/memory-builder";
 
 export function buildPrompt(input: GenerationInput): PromptContext {
   const company = input.companyContext;
@@ -42,6 +43,8 @@ ${candidate.observations.map((o) => `* ${o}`).join("\n")}
 HYPOTHESES:
 ${candidate.hypotheses.map((h) => `* ${h}`).join("\n")}`;
 
+  const conversationMemoryBlock = buildMemoryBlock(input.conversationMemories || []);
+
   const plannerStateBlock = `STAGE: ${planner.stage}
 OBJECTIVE: ${planner.currentObjective}
 MISSING INFO: ${planner.missingInformation.join("; ")}
@@ -78,6 +81,8 @@ ${companyContextBlock}
 
 ${candidateIntelligenceBlock}
 
+${conversationMemoryBlock}
+
 # WHAT IS MY GOAL?
 ${plannerStateBlock}
 
@@ -97,6 +102,7 @@ ${expectedOutcomeBlock}
     companyContextBlock,
     recruiterPersonaBlock,
     candidateIntelligenceBlock,
+    conversationMemoryBlock,
     plannerStateBlock,
     selectedActionBlock,
     expectedOutcomeBlock,
