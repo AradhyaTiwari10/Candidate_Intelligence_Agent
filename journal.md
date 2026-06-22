@@ -43,3 +43,48 @@ Strict separation between candidate understanding and recruiter objectives makes
 
 Next Step:
 E4.2 Action Selection
+
+## M5 Agent Orchestrator
+Date: 2026-06-22
+
+Milestone:
+M5
+
+Epic:
+E5.1 Agent Orchestrator
+
+Objective:
+Create centralized execution layer.
+
+Files Created:
+* src/features/orchestrator/agent-state.ts
+* src/features/orchestrator/execution-result.ts
+* src/features/orchestrator/agent-loop.ts
+* src/features/orchestrator/agent-orchestrator.ts
+* src/features/orchestrator/__tests__/orchestrator.test.ts
+* src/features/orchestrator/__tests__/run-tests.ts
+
+Files Modified:
+* src/stores/useAppStore.ts
+
+Architectural Decisions:
+Consolidate all independent engines (Observation, Inference, Hypothesis, Planner, Action Selector) under a single entry point representing the Observe-Reason-Plan-Act execution lifecycle.
+
+Challenges:
+Coordinating multiple disjoint state changes and mutations deterministically without triggering race conditions or stale state in the global Zustand store.
+
+Resolutions:
+Encapsulated the entire pipeline execution into a pure function taking a snapshot `AgentState` and returning a single, unified `ExecutionResult`, allowing the Zustand store to make a single atomic update.
+
+Technical Debt:
+The conversation history is currently passed as a passive log, and will need active semantic search or context window management when LLMs are integrated.
+
+Risks:
+Over-dependence on structural type checks; any changes to sub-engine interfaces will propagate and require updates across the orchestrator adapters.
+
+Lessons Learned:
+Enforcing a strict functional loop (ORPA) dramatically reduces state management bugs and makes testing agent transitions trivial.
+
+Next Step:
+Groq Integration
+

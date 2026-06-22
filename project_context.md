@@ -18,3 +18,7 @@ Planner now determines:
 * confidence
 
 Planner executes before language generation.
+
+## M5 Agent Orchestrator
+Added Observe → Reason → Plan → Act execution model.
+All future language generation must operate through the orchestrator.

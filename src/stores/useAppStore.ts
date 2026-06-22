@@ -11,8 +11,8 @@ import {
 import { generatePersona as runGeneratePersona } from "@/features/setup/persona-generator";
 import { generateStrategy as runGenerateStrategy } from "@/features/setup/strategy-generator";
 import { bootstrapAgent as runBootstrapAgent } from "@/features/setup/agent-bootstrap";
-import { runIntelligencePipeline } from "@/features/intelligence/intelligence-pipeline";
-import { planNextSteps } from "@/features/planner/planner-engine";
+import { runOrchestrator } from "@/features/orchestrator/agent-orchestrator";
+import { AgentState } from "@/features/orchestrator/agent-state";
 
 interface AppState {
   companyContext: CompanyContext | null;
@@ -40,7 +40,7 @@ interface AppState {
   generateStrategy: () => void;
   bootstrapAgent: (context: CompanyContext) => void;
 
-  // Milestone 3 & 4 actions
+  // Milestone 3 & 4 & 5 actions implementation
   processCandidateMessage: (candidateId: string, message: string) => void;
 }
 
@@ -269,39 +269,38 @@ export const useAppStore = create<AppState>((set) => ({
       };
     }),
 
-  // Milestone 3 & 4 actions implementation
+  // Milestone 3 & 4 & 5 actions implementation
   processCandidateMessage: (candidateId, message) =>
     set((store) => {
       const candidate = store.candidates.find((c) => c.id === candidateId);
       if (!candidate) return {};
 
-      // Run pipeline
-      const { observations, inferences, hypotheses, updatedCandidate } =
-        runIntelligencePipeline(message, candidate);
-
-      // Run planner update
-      const currentPlanner = store.plannerState || {
-        stage: "DISCOVERY",
-        currentObjective: "Understand motivations",
-        missingInformation: [],
-        reasoning: "",
-        nextAction: "",
-        confidence: 70,
+      // Build AgentState snapshot
+      const agentState: AgentState = {
+        companyContext: store.companyContext,
+        recruiterPersona: store.recruiterPersona,
+        candidateIntelligence: candidate,
+        plannerState: store.plannerState || {
+          stage: "DISCOVERY",
+          currentObjective: "Understand motivations",
+          missingInformation: [],
+          reasoning: "",
+          nextAction: "",
+          confidence: 70,
+        },
+        conversationHistory: store.messages,
       };
-      const updatedPlanner = planNextSteps(updatedCandidate, currentPlanner);
 
-      // Create journal entry
-      const journalEntry: JournalEntry = {
-        id: `j-pipe-${Date.now()}`,
-        observation: observations.join("; ") || "No significant topic observed.",
-        inference: inferences.join("; ") || "No new inferences drawn.",
-        hypothesis: hypotheses.join("; ") || "No new hypotheses formulated.",
-        action:
-          updatedPlanner.nextAction === "BOOK_CALL"
-            ? `Flagged ${candidate.name} as ready for booking. Triggering schedule actions.`
-            : `Determined next planned action: ${updatedPlanner.nextAction} under objective: ${updatedPlanner.currentObjective}`,
-        timestamp: new Date().toISOString(),
-      };
+      // Run ORPA cycle (Observe -> Reason -> Plan -> Act) through the Orchestrator
+      const {
+        observations,
+        inferences,
+        hypotheses,
+        plannerUpdates,
+        selectedAction,
+        journalEntry,
+        updatedCandidate,
+      } = runOrchestrator(message, agentState);
 
       // Add messages
       const userMessage: ConversationMessage = {
@@ -314,7 +313,7 @@ export const useAppStore = create<AppState>((set) => ({
       const agentReply: ConversationMessage = {
         id: `msg-agent-${Date.now() + 1}`,
         role: "assistant",
-        content: `Evaluated message. Active Stage: ${updatedPlanner.stage}. Next Action: ${updatedPlanner.nextAction}. Current Objective: ${updatedPlanner.currentObjective}.`,
+        content: `Orchestrator qualification complete. Stage: ${plannerUpdates.stage}. Selected Action: ${selectedAction}. Objective: ${plannerUpdates.currentObjective}.`,
         timestamp: new Date().toISOString(),
       };
 
@@ -325,7 +324,7 @@ export const useAppStore = create<AppState>((set) => ({
 
       return {
         candidates: updatedCandidates,
-        plannerState: updatedPlanner,
+        plannerState: plannerUpdates,
         journalEntries: [journalEntry, ...store.journalEntries],
         messages: [...store.messages, userMessage, agentReply],
       };
