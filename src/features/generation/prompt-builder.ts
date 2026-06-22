@@ -2,6 +2,7 @@ import { GenerationInput } from "./generation-input";
 import { PromptContext } from "./prompt-context";
 import { buildStrategy } from "../strategy/strategy-builder";
 import { buildMemoryBlock } from "../memory/memory-builder";
+import { getRelevantMemories } from "../memory/memory-retriever";
 
 export function buildPrompt(input: GenerationInput): PromptContext {
   const company = input.companyContext;
@@ -43,7 +44,8 @@ ${candidate.observations.map((o) => `* ${o}`).join("\n")}
 HYPOTHESES:
 ${candidate.hypotheses.map((h) => `* ${h}`).join("\n")}`;
 
-  const conversationMemoryBlock = buildMemoryBlock(input.conversationMemories || []);
+  const relevantMemories = getRelevantMemories(input.conversationMemories || [], action);
+  const conversationMemoryBlock = buildMemoryBlock(relevantMemories);
 
   const plannerStateBlock = `STAGE: ${planner.stage}
 OBJECTIVE: ${planner.currentObjective}

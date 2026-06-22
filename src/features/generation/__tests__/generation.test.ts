@@ -1,5 +1,6 @@
 import { buildPrompt } from "../prompt-builder";
 import { GenerationInput } from "../generation-input";
+import { MemoryRecord } from "../../memory/memory-record";
 
 const mockInput: GenerationInput = {
   companyContext: {
@@ -81,6 +82,40 @@ export function runPromptBuilderTest() {
     !full.includes("ASK_OWNERSHIP")
   ) {
     throw new Error("Prompt context compilation is incomplete");
+  }
+
+  // Integration assertions for memories
+  console.log("Checking getRelevantMemories integration in Prompt Builder...");
+  const mockMemories: readonly MemoryRecord[] = [
+    { id: "1", candidateId: "cand-test", category: "flexibility", fact: "Flexibility Info", timestamp: "now" },
+    { id: "2", candidateId: "cand-test", category: "compensation", fact: "Compensation Info", timestamp: "now" },
+    { id: "3", candidateId: "cand-test", category: "motivation", fact: "Motivation Info", timestamp: "now" }
+  ];
+
+  const remotePrompt = buildPrompt({
+    ...mockInput,
+    selectedAction: "ASK_REMOTE",
+    conversationMemories: mockMemories
+  });
+
+  if (!remotePrompt.fullPrompt.includes("Flexibility Info")) {
+    throw new Error("ASK_REMOTE prompt missing flexibility memory record");
+  }
+  if (remotePrompt.fullPrompt.includes("Compensation Info")) {
+    throw new Error("ASK_REMOTE prompt contains unrelated compensation memory record");
+  }
+
+  const compPrompt = buildPrompt({
+    ...mockInput,
+    selectedAction: "ASK_COMPENSATION",
+    conversationMemories: mockMemories
+  });
+
+  if (!compPrompt.fullPrompt.includes("Compensation Info")) {
+    throw new Error("ASK_COMPENSATION prompt missing compensation memory record");
+  }
+  if (compPrompt.fullPrompt.includes("Flexibility Info")) {
+    throw new Error("ASK_COMPENSATION prompt contains unrelated flexibility memory record");
   }
 
   console.log("✓ Prompt Builder compilation tests passed.");

@@ -55,8 +55,8 @@ Strategy engine determines communication style.
 Introduced LLM response generation with validation and fallback protections.
 Connected planning, strategy, prompt builder, Groq execution, and UI output logs.
 
-## M8 E8.4 Conversation Memory Layer
-Implemented persistent candidate memory extraction and retrieval. Deduplicates and merges candidate facts over dialogue history, injecting them into the Prompt Builder context for subsequent Groq generation.
+## M8.4 Conversation Memory Layer
+Summary: Implemented memory extraction, storage, retrieval, deduplication, and prompt-context retrieval filtering.
 
 
 
