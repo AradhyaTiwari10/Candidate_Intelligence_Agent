@@ -4,13 +4,13 @@
 M8
 
 ## Epic:
-E8.3 Response Generation Pipeline
+E8.4 Conversation Memory Layer
 
 ## Architecture Decisions:
-Constructed a modular response pipeline (Prompt -> LLM -> Validate -> Fallback) where validation checks prevent policy leaks or sentence repetitions before delivering dialogue text to recruiters, routing to deterministic fallback strategies on failure.
+Designed a rule-based memory extraction and deduplication engine that updates state atomically on candidate messages, storing facts under defined categories (compensation, motivation, flexibility, experience, general) and compiling them as a structured Markdown block in Prompt Context to preserve history for Groq execution.
 
 ## Commit Hash:
-77470631a496db798aaaa297b3b9de0c1fab344c
+41a450ff4bf2454e1b1bc735911f23b42473cb7e
 
 ## Next Recommended Step:
 M9 Multi-Agent Architecture
