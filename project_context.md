@@ -41,4 +41,10 @@ Every planner decision now exposes certainty levels.
 Added visual explainability layer.
 Agent reasoning now visible to users.
 
+## M8 E8.1 Groq Infrastructure
+Introduced provider abstraction layer.
+Application now communicates through GenerationService.
+Groq implementation isolated behind GroqClient.
+
+
 
