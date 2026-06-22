@@ -32,3 +32,8 @@ Added action explanation system.
 Added reasoning traces.
 Agent decisions are now fully inspectable.
 Explainability now sits between planning and language generation.
+
+## M7 Confidence Engine
+Added confidence scoring.
+Every planner decision now exposes certainty levels.
+

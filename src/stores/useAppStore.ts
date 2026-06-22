@@ -16,6 +16,9 @@ import { AgentState } from "@/features/orchestrator/agent-state";
 import { generateActionExplanation } from "@/features/explainability/action-explanation-engine";
 import { generateReasoningTrace } from "@/features/explainability/reasoning-trace";
 import { ReasoningTrace } from "@/features/explainability/explanation-result";
+import { ConfidenceResult } from "@/features/confidence/confidence-result";
+import { calculateConfidence } from "@/features/confidence/confidence-engine";
+
 
 interface AppState {
   companyContext: CompanyContext | null;
@@ -25,8 +28,9 @@ interface AppState {
   plannerState: PlannerState | null;
   messages: readonly ConversationMessage[];
   journalEntries: readonly JournalEntry[];
-  actionExplanation: ActionExplanation | null;
+   actionExplanation: ActionExplanation | null;
   activeReasoningTrace: ReasoningTrace | null;
+  activeConfidenceResult: ConfidenceResult | null;
 
   // Actions
   setCompanyContext: (context: CompanyContext) => void;
@@ -226,6 +230,7 @@ export const useAppStore = create<AppState>((set) => ({
   journalEntries: mockJournalEntries,
   actionExplanation: mockActionExplanation,
   activeReasoningTrace: null,
+  activeConfidenceResult: null,
 
   setCompanyContext: (companyContext) => set({ companyContext }),
   setRecruiterPersona: (recruiterPersona) => set({ recruiterPersona }),
@@ -268,6 +273,7 @@ export const useAppStore = create<AppState>((set) => ({
         plannerState: planner,
         actionExplanation: null,
         activeReasoningTrace: null,
+        activeConfidenceResult: null,
         messages: [
           {
             id: `msg-bootstrap-${Date.now()}`,
@@ -313,9 +319,16 @@ export const useAppStore = create<AppState>((set) => ({
         updatedCandidate,
       } = executionResult;
 
-      // Compile ActionExplanation and ReasoningTrace
-      const explanation = generateActionExplanation(updatedCandidate, plannerUpdates, selectedAction);
+      // Compile ActionExplanation, ReasoningTrace and Confidence
       const reasoningTrace = generateReasoningTrace(executionResult);
+      const confidenceResult = calculateConfidence(updatedCandidate, plannerUpdates, reasoningTrace);
+      const explanation = generateActionExplanation(
+        updatedCandidate,
+        plannerUpdates,
+        selectedAction,
+        confidenceResult.confidence,
+        confidenceResult.confidenceFactors
+      );
 
       // Add messages
       const userMessage: ConversationMessage = {
@@ -342,6 +355,7 @@ export const useAppStore = create<AppState>((set) => ({
         plannerState: plannerUpdates,
         actionExplanation: explanation,
         activeReasoningTrace: reasoningTrace,
+        activeConfidenceResult: confidenceResult,
         journalEntries: [journalEntry, ...store.journalEntries],
         messages: [...store.messages, userMessage, agentReply],
       };

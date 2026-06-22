@@ -1,10 +1,13 @@
-import { CandidateIntelligence, PlannerState } from "@/types";
-import { ActionExplanation } from "./explanation-result";
+import { CandidateIntelligence, PlannerState } from "../../types";
+import { ActionExplanation, ReasoningTrace } from "./explanation-result";
+import { calculateConfidence } from "../confidence/confidence-engine";
 
 export function generateActionExplanation(
   candidate: CandidateIntelligence,
   planner: PlannerState,
-  action: string
+  action: string,
+  confidence?: number,
+  confidenceFactors?: readonly string[]
 ): ActionExplanation {
   let goal = "Progress candidate recruitment lifecycle.";
   let reasoning = "Determining candidate interest signals and role suitability.";
@@ -14,15 +17,15 @@ export function generateActionExplanation(
     case "ASK_MOTIVATION":
       goal = "Understand candidate motivations";
       reasoning = candidate.observations.includes("Candidate values ownership")
-        ? "Candidate expressed ownership interest, but core career motivation drivers remain unverified."
+        ? "Candidate expressed ownership interest, but motivations remain unclear."
         : "Candidate general career drivers have not been qualified yet.";
-      expectedOutcome = "Identify primary career drivers and current role alignment constraints.";
+      expectedOutcome = "Identify primary career drivers.";
       break;
 
     case "ASK_OWNERSHIP":
       goal = "Assess ownership expectations";
       reasoning = "Candidate values autonomy and flat structures. We need to verify exact decision-making capabilities.";
-      expectedOutcome = "Verify developer's autonomy boundary expectations and alignment with flat architectures.";
+      expectedOutcome = "Verify developer's autonomy boundary expectations.";
       break;
 
     case "ASK_REMOTE":
@@ -33,7 +36,7 @@ export function generateActionExplanation(
 
     case "ASK_COMPENSATION":
       goal = "Qualify salary expectations and package alignment";
-      reasoning = "Candidate has indicated compensation sensitivity. Proactive qualification prevents downstream deal breaks.";
+      reasoning = "Candidate concerns detected.";
       expectedOutcome = "Confirm salary expectations and cash/equity trade-off boundaries.";
       break;
 
@@ -44,12 +47,9 @@ export function generateActionExplanation(
       break;
 
     case "ADDRESS_CONCERN":
-      goal = "Reduce candidate uncertainty and address concerns";
-      reasoning =
-        candidate.concerns.length > 0
-          ? `Candidate concerns detected: [${candidate.concerns.join("; ")}]. Proactive resolution mitigates dropout risks.`
-          : "Candidate concerns detected. Proactive resolution mitigates dropout risks.";
-      expectedOutcome = "Alleviate specific candidate concerns, increasing interest score and confidence.";
+      goal = "Reduce candidate uncertainty";
+      reasoning = "Candidate concerns detected.";
+      expectedOutcome = "Increase engagement confidence.";
       break;
 
     case "BOOK_CALL":
@@ -59,5 +59,27 @@ export function generateActionExplanation(
       break;
   }
 
-  return { goal, reasoning, expectedOutcome };
+  let finalConfidence = confidence;
+  let finalConfidenceFactors = confidenceFactors;
+
+  if (finalConfidence === undefined || finalConfidenceFactors === undefined) {
+    const trace: ReasoningTrace = {
+      observations: candidate.observations,
+      inferences: [],
+      hypotheses: candidate.hypotheses,
+      plannerDecision: planner.reasoning,
+      selectedAction: action,
+    };
+    const confRes = calculateConfidence(candidate, planner, trace);
+    finalConfidence = confRes.confidence;
+    finalConfidenceFactors = confRes.confidenceFactors;
+  }
+
+  return {
+    goal,
+    reasoning,
+    expectedOutcome,
+    confidence: finalConfidence,
+    confidenceFactors: finalConfidenceFactors,
+  };
 }

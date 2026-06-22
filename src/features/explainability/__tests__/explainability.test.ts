@@ -1,7 +1,7 @@
 import { generateActionExplanation } from "../action-explanation-engine";
 import { generateReasoningTrace } from "../reasoning-trace";
-import { CandidateIntelligence, PlannerState } from "@/types";
-import { ExecutionResult } from "@/features/orchestrator/execution-result";
+import { CandidateIntelligence, PlannerState } from "../../../types";
+import { ExecutionResult } from "../../orchestrator/execution-result";
 
 const mockCandidate: CandidateIntelligence = {
   id: "test",
