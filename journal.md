@@ -86,5 +86,49 @@ Lessons Learned:
 Enforcing a strict functional loop (ORPA) dramatically reduces state management bugs and makes testing agent transitions trivial.
 
 Next Step:
-Groq Integration
+Groq Client
+
+## M6 Prompt Builder
+Date: 2026-06-22
+
+Milestone:
+M6
+
+Epic:
+E6.1 Prompt Builder
+
+Objective:
+Prepare structured prompts for Groq.
+
+Files Created:
+* src/features/generation/generation-input.ts
+* src/features/generation/prompt-context.ts
+* src/features/generation/prompt-builder.ts
+* src/features/generation/__tests__/generation.test.ts
+* src/features/generation/__tests__/run-tests.ts
+
+Files Modified:
+* None
+
+Architectural Decisions:
+Language generation is completely separated from planning. The Prompt Builder consumes structured outputs from the Planner and compiles it into a markdown prompt context, preventing the LLM from making routing decisions.
+
+Challenges:
+Balancing the prompt variables to avoid bloating the context window while providing complete candidate observations and hypotheses.
+
+Resolutions:
+Separated the prompt into distinct sections (WHO AM I, WHAT DO I KNOW, WHAT IS MY GOAL, WHAT SHOULD I DO) and defined clear negative constraints to prevent generic messages.
+
+Technical Debt:
+Expected outcomes are currently statically mapped based on the selected action, and will need dynamic variables as actions grow in variety.
+
+Risks:
+Future LLM integration might violate negative constraints if prompt variables are too verbose or formatting is parsed incorrectly.
+
+Lessons Learned:
+Defining negative constraints directly in the compiled prompt is highly effective at forcing targeted recruiter tones.
+
+Next Step:
+Groq Client
+
 

@@ -22,3 +22,7 @@ Planner executes before language generation.
 ## M5 Agent Orchestrator
 Added Observe → Reason → Plan → Act execution model.
 All future language generation must operate through the orchestrator.
+
+## M6 Prompt Builder
+Language generation separated from reasoning.
+Prompts now consume planner outputs rather than raw messages.
