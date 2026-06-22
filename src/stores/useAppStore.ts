@@ -13,6 +13,9 @@ import { generateStrategy as runGenerateStrategy } from "@/features/setup/strate
 import { bootstrapAgent as runBootstrapAgent } from "@/features/setup/agent-bootstrap";
 import { runOrchestrator } from "@/features/orchestrator/agent-orchestrator";
 import { AgentState } from "@/features/orchestrator/agent-state";
+import { generateActionExplanation } from "@/features/explainability/action-explanation-engine";
+import { generateReasoningTrace } from "@/features/explainability/reasoning-trace";
+import { ReasoningTrace } from "@/features/explainability/explanation-result";
 
 interface AppState {
   companyContext: CompanyContext | null;
@@ -23,6 +26,7 @@ interface AppState {
   messages: readonly ConversationMessage[];
   journalEntries: readonly JournalEntry[];
   actionExplanation: ActionExplanation | null;
+  activeReasoningTrace: ReasoningTrace | null;
 
   // Actions
   setCompanyContext: (context: CompanyContext) => void;
@@ -42,6 +46,9 @@ interface AppState {
 
   // Milestone 3 & 4 & 5 actions implementation
   processCandidateMessage: (candidateId: string, message: string) => void;
+
+  // Milestone 7 actions implementation
+  generateExplanation: () => void;
 }
 
 // Sample Company Mock Data
@@ -218,6 +225,7 @@ export const useAppStore = create<AppState>((set) => ({
   messages: mockMessages,
   journalEntries: mockJournalEntries,
   actionExplanation: mockActionExplanation,
+  activeReasoningTrace: null,
 
   setCompanyContext: (companyContext) => set({ companyContext }),
   setRecruiterPersona: (recruiterPersona) => set({ recruiterPersona }),
@@ -258,6 +266,8 @@ export const useAppStore = create<AppState>((set) => ({
         companyContext: context,
         recruiterPersona: persona,
         plannerState: planner,
+        actionExplanation: null,
+        activeReasoningTrace: null,
         messages: [
           {
             id: `msg-bootstrap-${Date.now()}`,
@@ -292,6 +302,7 @@ export const useAppStore = create<AppState>((set) => ({
       };
 
       // Run ORPA cycle (Observe -> Reason -> Plan -> Act) through the Orchestrator
+      const executionResult = runOrchestrator(message, agentState);
       const {
         observations,
         inferences,
@@ -300,7 +311,11 @@ export const useAppStore = create<AppState>((set) => ({
         selectedAction,
         journalEntry,
         updatedCandidate,
-      } = runOrchestrator(message, agentState);
+      } = executionResult;
+
+      // Compile ActionExplanation and ReasoningTrace
+      const explanation = generateActionExplanation(updatedCandidate, plannerUpdates, selectedAction);
+      const reasoningTrace = generateReasoningTrace(executionResult);
 
       // Add messages
       const userMessage: ConversationMessage = {
@@ -325,8 +340,23 @@ export const useAppStore = create<AppState>((set) => ({
       return {
         candidates: updatedCandidates,
         plannerState: plannerUpdates,
+        actionExplanation: explanation,
+        activeReasoningTrace: reasoningTrace,
         journalEntries: [journalEntry, ...store.journalEntries],
         messages: [...store.messages, userMessage, agentReply],
       };
+    }),
+
+  // Milestone 7 actions implementation
+  generateExplanation: () =>
+    set((store) => {
+      const activeCandidate = store.candidates.find((c) => c.id === store.activeCandidateId);
+      if (!activeCandidate || !store.plannerState) return {};
+      const explanation = generateActionExplanation(
+        activeCandidate,
+        store.plannerState,
+        store.plannerState.nextAction
+      );
+      return { actionExplanation: explanation };
     }),
 }));

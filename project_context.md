@@ -26,3 +26,9 @@ All future language generation must operate through the orchestrator.
 ## M6 Prompt Builder
 Language generation separated from reasoning.
 Prompts now consume planner outputs rather than raw messages.
+
+## M7 Explainability Layer
+Added action explanation system.
+Added reasoning traces.
+Agent decisions are now fully inspectable.
+Explainability now sits between planning and language generation.
