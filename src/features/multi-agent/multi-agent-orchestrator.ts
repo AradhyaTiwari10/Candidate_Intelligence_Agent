@@ -71,7 +71,7 @@ export function runMultiAgentReview(
       confidence: 0,
       rationale: "Coordinator consensus generation failed.",
       detectedDisagreements: [],
-      priorityReason: "CRITICAL_MISSING_INFO",
+      priorityReason: "LOW_CONFIDENCE",
       selectedBy: "COORDINATOR",
       tieBreakRule: "FIRST_ENCOUNTERED",
       rankedCandidates: [],

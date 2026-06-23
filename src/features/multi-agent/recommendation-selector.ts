@@ -1,5 +1,6 @@
 import { AgentRole } from "./agent-role";
-import { AgentResult, RecommendationPriorityReason, RecommendationType } from "./recommendation-types";
+import { AgentResult } from "./agent-result";
+import { RecommendationPriorityReason, RecommendationType } from "./recommendation-types";
 import { PRIORITY_MAP } from "./priority-map";
 
 export interface RankedCandidate {

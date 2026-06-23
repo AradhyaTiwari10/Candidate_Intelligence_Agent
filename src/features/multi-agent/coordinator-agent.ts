@@ -1,6 +1,7 @@
 import { PlannerState } from "../../types";
 import { ConfidenceResult } from "../confidence/confidence-result";
-import { AgentResult, RecommendationPriorityReason, RecommendationType } from "./recommendation-types";
+import { AgentResult } from "./agent-result";
+import { RecommendationPriorityReason, RecommendationType } from "./recommendation-types";
 import { selectRecommendation, RankedCandidate, TieBreakRule } from "./recommendation-selector";
 import { AgentRole } from "./agent-role";
 

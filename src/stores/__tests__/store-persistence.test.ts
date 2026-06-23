@@ -83,10 +83,8 @@ export function runStorePersistenceTests() {
   const memory: MemoryRecord = {
     id: "mem-persist",
     candidateId: "cand-persist-1",
-    key: "preference",
-    value: "likes typescript",
-    confidence: 1.0,
-    sourceMessageId: "msg-persist",
+    category: "general",
+    fact: "likes typescript",
     timestamp: new Date().toISOString(),
   };
 
@@ -104,11 +102,11 @@ export function runStorePersistenceTests() {
     recommendationType: "QUALIFY_EXPERIENCE",
     recommendationText: "Verify background",
     confidence: 85,
-    priorityReason: "CRITICAL_MISSING_INFO",
+    priorityReason: "LOW_CONFIDENCE",
     rationale: "Rationale text",
     detectedDisagreements: [],
     selectedBy: "SOURCER",
-    tieBreakRule: "PRIORITY_MAP",
+    tieBreakRule: "PRIORITY_RANK",
     rankedCandidates: []
   };
 

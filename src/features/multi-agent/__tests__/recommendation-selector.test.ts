@@ -1,5 +1,5 @@
 import { selectRecommendation } from "../recommendation-selector";
-import { AgentResult } from "../recommendation-types";
+import { AgentResult } from "../agent-result";
 
 export function runSelectorTests() {
   console.log("Running Recommendation Selector tests...");
