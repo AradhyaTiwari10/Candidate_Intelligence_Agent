@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import {
   CompanyContext,
   RecruiterPersona,
@@ -22,6 +23,9 @@ import { runResponsePipeline } from "@/features/response/response-pipeline";
 import { MemoryRecord } from "@/features/memory/memory-record";
 import { extractMemory } from "@/features/memory/memory-extractor";
 import { deduplicateRecords, filterMemoryByCandidate } from "@/features/memory/memory-store";
+import { runMultiAgentReview } from "@/features/multi-agent/multi-agent-orchestrator";
+import { AgentResult } from "@/features/multi-agent/agent-result";
+import { CoordinatorRecommendation } from "@/features/multi-agent/coordinator-agent";
 
 
 interface AppState {
@@ -37,6 +41,9 @@ interface AppState {
   activeConfidenceResult: ConfidenceResult | null;
   generatedResponse: string | null;
   conversationMemories: readonly MemoryRecord[];
+  multiAgentResults: readonly AgentResult[];
+  coordinatorRecommendation: CoordinatorRecommendation | null;
+  analysisError: boolean;
 
   // Actions
   setCompanyContext: (context: CompanyContext) => void;
@@ -228,7 +235,9 @@ const mockActionExplanation: ActionExplanation = {
   confidenceFactors: ["High role fit (94%)", "Strong readiness for startup environment"],
 };
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
   companyContext: defaultCompanyContext,
   recruiterPersona: defaultRecruiterPersona,
   candidates: mockCandidates,
@@ -241,6 +250,9 @@ export const useAppStore = create<AppState>((set) => ({
   activeConfidenceResult: null,
   generatedResponse: null,
   conversationMemories: [],
+  multiAgentResults: [],
+  coordinatorRecommendation: null,
+  analysisError: false,
 
   setCompanyContext: (companyContext) => set({ companyContext }),
   setRecruiterPersona: (recruiterPersona) => set({ recruiterPersona }),
@@ -286,6 +298,9 @@ export const useAppStore = create<AppState>((set) => ({
         activeConfidenceResult: null,
         generatedResponse: null,
         conversationMemories: [],
+        multiAgentResults: [],
+        coordinatorRecommendation: null,
+        analysisError: false,
         messages: [
           {
             id: `msg-bootstrap-${Date.now()}`,
@@ -342,10 +357,36 @@ export const useAppStore = create<AppState>((set) => ({
       confidenceResult.confidenceFactors
     );
 
+    // Run Multi-Agent Review (passive — does not alter planner or response pipeline)
+    let multiAgentResults: readonly AgentResult[] = [];
+    let coordinatorRecommendation: CoordinatorRecommendation | null = null;
+    let analysisError = false;
+    try {
+      const multiAgentRaw = runMultiAgentReview(updatedCandidate, plannerUpdates, confidenceResult);
+      multiAgentResults = multiAgentRaw.filter(
+        (r): r is AgentResult => r.agent !== "COORDINATOR"
+      ) as readonly AgentResult[];
+      coordinatorRecommendation = multiAgentRaw.find(
+        (r): r is CoordinatorRecommendation => r.agent === "COORDINATOR"
+      ) ?? null;
+    } catch (err: any) {
+      console.error("Multi-Agent Review failed:", err);
+      multiAgentResults = [];
+      coordinatorRecommendation = null;
+      analysisError = true;
+    }
+
     // Extract and merge conversation memory
-    const newMemories = extractMemory(candidateId, message);
-    const updatedMemories = deduplicateRecords(store.conversationMemories, newMemories);
-    const candidateMemories = filterMemoryByCandidate(updatedMemories, candidateId);
+    let updatedMemories = store.conversationMemories;
+    let candidateMemories: readonly MemoryRecord[] = [];
+    try {
+      const newMemories = extractMemory(candidateId, message);
+      updatedMemories = deduplicateRecords(store.conversationMemories, newMemories);
+      candidateMemories = filterMemoryByCandidate(updatedMemories, candidateId);
+    } catch (err: any) {
+      console.error("Memory extraction failed:", err);
+      candidateMemories = filterMemoryByCandidate(store.conversationMemories, candidateId);
+    }
 
     // Run Response Pipeline
     const generationInput = {
@@ -390,6 +431,9 @@ export const useAppStore = create<AppState>((set) => ({
       journalEntries: [journalEntry, ...store.journalEntries],
       messages: [...store.messages, userMessage, agentReply],
       conversationMemories: updatedMemories,
+      multiAgentResults,
+      coordinatorRecommendation,
+      analysisError,
     });
   },
 
@@ -405,4 +449,26 @@ export const useAppStore = create<AppState>((set) => ({
       );
       return { actionExplanation: explanation };
     }),
-}));
+    }),
+    {
+      name: "candidate-intelligence-agent",
+      partialize: (state) => ({
+        companyContext: state.companyContext,
+        candidates: state.candidates,
+        activeCandidateId: state.activeCandidateId,
+        messages: state.messages,
+        journalEntries: state.journalEntries,
+        conversationMemories: state.conversationMemories,
+        multiAgentResults: state.multiAgentResults,
+        coordinatorRecommendation: state.coordinatorRecommendation,
+      }),
+      onRehydrateStorage: (state) => {
+        return (state, error) => {
+          if (error) {
+            console.error("Rehydration failed:", error);
+          }
+        };
+      },
+    }
+  )
+);

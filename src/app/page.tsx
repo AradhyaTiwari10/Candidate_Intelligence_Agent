@@ -26,6 +26,10 @@ import {
   Menu,
   X,
   Plus,
+  Search,
+  Zap,
+  Network,
+  ShieldAlert,
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -41,6 +45,9 @@ export default function Dashboard() {
     activeReasoningTrace,
     activeConfidenceResult,
     generatedResponse,
+    multiAgentResults,
+    coordinatorRecommendation,
+    analysisError,
     setActiveCandidateId,
     addMessage,
     addJournalEntry,
@@ -62,6 +69,28 @@ export default function Dashboard() {
 
     processCandidateMessage(activeCandidate.id, chatInput);
     setChatInput("");
+  };
+
+  // Helper for RecommendationType badge color
+  const getRecommendationTypeColor = (type: string) => {
+    switch (type) {
+      case "ADDRESS_OBJECTION":  return "bg-rose-500/20 text-rose-300 border-rose-500/30";
+      case "ASK_COMPENSATION":   return "bg-amber-500/20 text-amber-300 border-amber-500/30";
+      case "ASK_REMOTE":         return "bg-sky-500/20 text-sky-300 border-sky-500/30";
+      case "QUALIFY_EXPERIENCE": return "bg-violet-500/20 text-violet-300 border-violet-500/30";
+      case "BOOK_CALL":          return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+      default:                   return "bg-slate-700/40 text-slate-300 border-slate-600/40";
+    }
+  };
+
+  // Role → icon + accent
+  const getAgentMeta = (role: string) => {
+    switch (role) {
+      case "SOURCER":    return { icon: <Search className="h-3.5 w-3.5" />, accent: "text-blue-400", border: "border-blue-500/20" };
+      case "QUALIFIER":  return { icon: <Target className="h-3.5 w-3.5" />, accent: "text-violet-400", border: "border-violet-500/20" };
+      case "ENGAGEMENT": return { icon: <Zap className="h-3.5 w-3.5" />, accent: "text-emerald-400", border: "border-emerald-500/20" };
+      default:           return { icon: <Brain className="h-3.5 w-3.5" />, accent: "text-slate-400", border: "border-slate-600/20" };
+    }
   };
 
   // Helper for score color coding
@@ -749,6 +778,304 @@ export default function Dashboard() {
             </div>
 
           </div>
+
+          {/* ============================================================
+               RECRUITING CONSENSUS ENGINE — M9.6
+               ============================================================ */}
+          <section
+            id="consensus-engine-panel"
+            className="bg-[#0E121B]/80 border border-slate-800/80 rounded-2xl overflow-hidden"
+          >
+            {/* Section Header */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-900/80 bg-[#0C1018]/60">
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-violet-600/10 border border-violet-500/20">
+                  <Network className="h-4 w-4 text-violet-400" />
+                </div>
+                <div>
+                  <span className="text-xs uppercase font-bold text-slate-200 tracking-wider">
+                    Recruiting Consensus Engine
+                  </span>
+                  <span className="block text-[9px] text-slate-500 font-medium tracking-widest uppercase mt-0.5">
+                    Multi-Agent Recommendation Review
+                  </span>
+                </div>
+              </div>
+              <span
+                className={`text-[9px] font-mono px-2 py-0.5 rounded font-bold border ${
+                  coordinatorRecommendation
+                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                    : "bg-slate-800/60 border-slate-700/40 text-slate-500"
+                }`}
+              >
+                {coordinatorRecommendation ? "LIVE" : "PENDING"}
+              </span>
+            </div>
+
+            {analysisError && (
+              <div
+                id="analysis-error-banner"
+                className="mx-5 mt-5 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold flex items-center gap-2"
+              >
+                <ShieldAlert className="h-4 w-4 shrink-0 text-red-400" />
+                <span>Analysis subsystem temporarily unavailable.</span>
+              </div>
+            )}
+
+            {coordinatorRecommendation ? (
+              <div className="p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+                {/* ── Sub-Agent Grid (left) ── */}
+                <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3">
+                  <div className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-0.5 sm:col-span-3 lg:col-span-1">
+                    Sub-Agent Signals
+                  </div>
+
+                  {multiAgentResults.map((result) => {
+                    const meta = getAgentMeta(result.agent);
+                    return (
+                      <div
+                        key={result.agent}
+                        id={`agent-card-${result.agent.toLowerCase()}`}
+                        className={`bg-[#0C1018]/70 border rounded-xl p-4 flex flex-col gap-2.5 ${meta.border}`}
+                      >
+                        {/* Role label */}
+                        <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${meta.accent}`}>
+                          {meta.icon}
+                          {result.agent}
+                        </div>
+
+                        {/* Type badge */}
+                        <span
+                          className={`self-start text-[10px] font-bold px-2 py-0.5 rounded border font-mono tracking-wide ${
+                            getRecommendationTypeColor(result.recommendationType)
+                          }`}
+                        >
+                          {result.recommendationType}
+                        </span>
+
+                        {/* Text */}
+                        <p className="text-[11px] text-slate-300 leading-relaxed">
+                          {result.recommendationText}
+                        </p>
+
+                        {/* Confidence bar */}
+                        <div className="mt-auto">
+                          <div className="flex items-center justify-between text-[9px] text-slate-500 mb-1">
+                            <span>Confidence</span>
+                            <span className="font-mono text-slate-300 font-semibold">{result.confidence}%</span>
+                          </div>
+                          <div className="h-1 bg-slate-900 rounded-full overflow-hidden border border-slate-800/40">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                result.confidence >= 85 ? "bg-emerald-500" :
+                                result.confidence >= 70 ? "bg-violet-500" : "bg-amber-500"
+                              }`}
+                              style={{ width: `${result.confidence}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* ── Coordinator Panel (right) ── */}
+                <div
+                  id="coordinator-panel"
+                  className="lg:col-span-7 bg-[#0D1020]/80 border border-violet-500/20 rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden"
+                >
+                  {/* Glow */}
+                  <div className="absolute top-0 right-0 h-32 w-40 bg-violet-600/5 rounded-full blur-3xl pointer-events-none" />
+
+                  {/* Header */}
+                  <div className="flex items-center justify-between border-b border-slate-900/60 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Brain className="h-4 w-4 text-violet-400" />
+                      <span className="text-xs uppercase font-bold text-slate-200 tracking-wider">
+                        Coordinator Recommendation
+                      </span>
+                    </div>
+                    <span
+                      className={`text-[10px] font-mono px-2.5 py-1 rounded-lg border font-bold ${
+                        getRecommendationTypeColor(coordinatorRecommendation.recommendationType)
+                      }`}
+                    >
+                      {coordinatorRecommendation.recommendationType}
+                    </span>
+                  </div>
+
+                  {/* Recommendation text */}
+                  <p className="text-sm text-slate-200 leading-relaxed font-medium">
+                    {coordinatorRecommendation.recommendationText}
+                  </p>
+
+                  {/* Confidence bar */}
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1.5">
+                      <span className="uppercase font-semibold">Decision Confidence</span>
+                      <span className="font-mono text-slate-200 font-bold text-xs">{coordinatorRecommendation.confidence}%</span>
+                    </div>
+                    <div className="h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800/40">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          coordinatorRecommendation.confidence >= 85 ? "bg-emerald-500" :
+                          coordinatorRecommendation.confidence >= 70 ? "bg-violet-500" : "bg-amber-500"
+                        }`}
+                        style={{ width: `${coordinatorRecommendation.confidence}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Priority reason */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-slate-500 uppercase font-semibold tracking-widest">Selected via</span>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-violet-900/30 border border-violet-500/20 text-violet-300">
+                      {coordinatorRecommendation.priorityReason}
+                    </span>
+                  </div>
+
+                  {/* Rationale */}
+                  <div className="p-3.5 rounded-lg bg-slate-900/40 border border-slate-800/60">
+                    <div className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mb-1.5 flex items-center gap-1.5">
+                      <Sparkles className="h-3 w-3 text-violet-400" />
+                      Coordinator Rationale
+                    </div>
+                    <p className="text-[11px] text-slate-300 leading-relaxed italic">
+                      {coordinatorRecommendation.rationale}
+                    </p>
+                  </div>
+
+                  {/* Selection Trace */}
+                  <div
+                    id="selection-trace-block"
+                    className="bg-[#0E121B]/60 border border-slate-800/60 rounded-xl p-4 space-y-3"
+                  >
+                    {/* Header */}
+                    <div className="text-[9px] text-slate-500 uppercase font-bold tracking-widest flex items-center gap-1.5 pb-2 border-b border-slate-800/40">
+                      <TrendingUp className="h-3 w-3 text-slate-400" />
+                      Selection Trace
+                    </div>
+
+                    {/* Winner + Tie-Break row */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <div className="text-[9px] text-slate-500 uppercase font-semibold tracking-widest mb-1">Winner</div>
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-violet-900/30 border border-violet-500/20 text-violet-300">
+                          {coordinatorRecommendation.selectedBy}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="text-[9px] text-slate-500 uppercase font-semibold tracking-widest mb-1">Tie-Break</div>
+                        <span
+                          className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                            coordinatorRecommendation.tieBreakRule === "PRIORITY_RANK"
+                              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                              : coordinatorRecommendation.tieBreakRule === "CONFIDENCE"
+                              ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                              : "bg-sky-500/10 border-sky-500/20 text-sky-400"
+                          }`}
+                        >
+                          {coordinatorRecommendation.tieBreakRule}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Ranked Candidates list */}
+                    <div>
+                      <div className="text-[9px] text-slate-500 uppercase font-semibold tracking-widest mb-2">Ranked Candidates</div>
+                      <div className="space-y-1.5">
+                        {coordinatorRecommendation.rankedCandidates.map((rc) => (
+                          <div
+                            key={rc.agent}
+                            className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${
+                              rc.finalPosition === 1
+                                ? "bg-violet-900/10 border-violet-500/20"
+                                : "bg-slate-900/30 border-slate-800/40"
+                            }`}
+                          >
+                            {/* Position number */}
+                            <span
+                              className={`text-[10px] font-mono font-black w-4 shrink-0 ${
+                                rc.finalPosition === 1 ? "text-violet-400" : "text-slate-600"
+                              }`}
+                            >
+                              {rc.finalPosition}.
+                            </span>
+
+                            {/* Agent + Type */}
+                            <div className="flex-1 min-w-0">
+                              <div className={`text-[10px] font-bold uppercase tracking-widest ${
+                                rc.finalPosition === 1 ? "text-slate-200" : "text-slate-400"
+                              }`}>
+                                {rc.agent}
+                              </div>
+                              <div className={`text-[9px] font-mono mt-0.5 ${
+                                getRecommendationTypeColor(rc.recommendationType).split(" ")[1]
+                              }`}>
+                                {rc.recommendationType}
+                              </div>
+                            </div>
+
+                            {/* Rank + Confidence */}
+                            <div className="text-right shrink-0">
+                              <div className="text-[9px] text-slate-500 font-mono">Rank {rc.rank}</div>
+                              <div className={`text-[9px] font-mono font-semibold ${
+                                rc.confidence >= 85 ? "text-emerald-400" :
+                                rc.confidence >= 70 ? "text-violet-400" : "text-amber-400"
+                              }`}>
+                                {rc.confidence}%
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Disagreements block — only if non-empty */}
+                  {coordinatorRecommendation.detectedDisagreements.length > 0 && (
+                    <div
+                      id="disagreements-block"
+                      className="p-3.5 rounded-lg bg-amber-500/5 border border-amber-500/20"
+                    >
+                      <div className="flex items-center gap-1.5 text-[9px] text-amber-400 uppercase font-bold tracking-widest mb-2">
+                        <ShieldAlert className="h-3.5 w-3.5" />
+                        Detected Agent Disagreements
+                      </div>
+                      <ul className="space-y-1.5">
+                        {coordinatorRecommendation.detectedDisagreements.map((d, i) => (
+                          <li
+                            key={i}
+                            className="text-[11px] text-amber-200/80 leading-relaxed pl-3 border-l-2 border-amber-500/30"
+                          >
+                            {d}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Empty state */
+              <div
+                id="consensus-empty-state"
+                className="flex flex-col items-center justify-center gap-3 py-12 px-6 text-center"
+              >
+                <div className="p-3 rounded-xl bg-slate-900/50 border border-slate-800/40">
+                  <Network className="h-8 w-8 text-slate-700" />
+                </div>
+                <p className="text-sm font-semibold text-slate-400">
+                  No multi-agent review available yet.
+                </p>
+                <p className="text-xs text-slate-600 max-w-xs">
+                  Send a message in the Agent Chat Log to trigger a full multi-agent consensus review.
+                </p>
+              </div>
+            )}
+          </section>
+
         </div>
       </main>
     </div>

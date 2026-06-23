@@ -50,6 +50,13 @@ export async function runResponsePipeline(
     }
   } catch (err: any) {
     console.error(`Response pipeline error: ${err.message || err}. Triggering fallback.`);
+    return {
+      success: false,
+      message: "I'm unable to complete the analysis right now. Please try again.",
+      validationPassed: false,
+      latencyMs: Math.round(performance.now() - startTime),
+      model: modelUsed,
+    };
   }
 
   return {
