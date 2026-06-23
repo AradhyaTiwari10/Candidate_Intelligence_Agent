@@ -16,6 +16,7 @@ import { runSelectorTests } from "./recommendation-selector.test";
 import { runStoreIntegrationTests } from "./store-integration.test";
 import { runStorePersistenceTests } from "../../../stores/__tests__/store-persistence.test";
 import { runErrorHandlingTests } from "./error-handling.test";
+import { runAnalyticsTests } from "../../../features/analytics/__tests__/analytics.test";
 
 async function main() {
   console.log("=== Starting PSVIEW Multi-Agent Suite ===");
@@ -26,6 +27,7 @@ async function main() {
     runStoreIntegrationTests();
     runStorePersistenceTests();
     runErrorHandlingTests();
+    runAnalyticsTests();
     console.log("===============================================================");
     console.log("ALL MULTI-AGENT TESTS COMPLETED SUCCESSFULLY.");
     process.exit(0);

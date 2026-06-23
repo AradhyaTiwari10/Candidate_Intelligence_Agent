@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAppStore, sampleCompanies } from "@/stores/useAppStore";
+import { getAnalyticsEvents, AnalyticsEvent } from "@/features/analytics/analytics";
 import { AgentInsightPanel } from "@/features/explainability-ui/agent-insight-panel";
 import {
   Bot,
@@ -59,6 +60,11 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [activeTab, setActiveTab] = useState<"intelligence" | "chat">("intelligence");
+  const [events, setEvents] = useState<AnalyticsEvent[]>([]);
+
+  useEffect(() => {
+    setEvents(getAnalyticsEvents());
+  }, [messages, multiAgentResults]);
 
   // Get active candidate details
   const activeCandidate = candidates.find((c) => c.id === activeCandidateId) || candidates[0];
@@ -1072,6 +1078,81 @@ export default function Dashboard() {
                 <p className="text-xs text-slate-600 max-w-xs">
                   Send a message in the Agent Chat Log to trigger a full multi-agent consensus review.
                 </p>
+              </div>
+            )}
+          </section>
+
+          {/* ============================================================
+               SYSTEM ANALYTICS — M10.3
+               ============================================================ */}
+          <section
+            id="system-analytics-panel"
+            className="bg-[#0E121B]/80 border border-slate-800/80 rounded-2xl overflow-hidden mt-6"
+          >
+            {/* Section Header */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-900/80 bg-[#0C1018]/60">
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-emerald-600/10 border border-emerald-500/20">
+                  <TrendingUp className="h-4 w-4 text-emerald-400" />
+                </div>
+                <div>
+                  <span className="text-xs uppercase font-bold text-slate-200 tracking-wider">
+                    System Analytics
+                  </span>
+                  <span className="block text-[9px] text-slate-500 font-medium tracking-widest uppercase mt-0.5">
+                    Demo Insights & Metrics
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {events.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 text-xs font-semibold">
+                No analytics data yet.
+              </div>
+            ) : (
+              <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Metric 1 */}
+                <div className="bg-[#0C1018]/60 border border-slate-800/60 rounded-xl p-4 flex flex-col justify-between">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                    Candidates Processed
+                  </span>
+                  <span className="text-2xl font-bold text-slate-100 mt-2 font-mono">
+                    {events.filter(e => e.event === "candidate_processed").length}
+                  </span>
+                </div>
+
+                {/* Metric 2 */}
+                <div className="bg-[#0C1018]/60 border border-slate-800/60 rounded-xl p-4 flex flex-col justify-between">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                    Multi-Agent Reviews
+                  </span>
+                  <span className="text-2xl font-bold text-slate-100 mt-2 font-mono">
+                    {events.filter(e => e.event === "multi_agent_review_completed").length}
+                  </span>
+                </div>
+
+                {/* Metric 3 */}
+                <div className="bg-[#0C1018]/60 border border-slate-800/60 rounded-xl p-4 flex flex-col justify-between">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                    Disagreements
+                  </span>
+                  <span className="text-2xl font-bold text-slate-100 mt-2 font-mono">
+                    {events
+                      .filter(e => e.event === "coordinator_disagreement_detected")
+                      .reduce((sum, e) => sum + (Number(e.payload?.count) || 0), 0)}
+                  </span>
+                </div>
+
+                {/* Metric 4 */}
+                <div className="bg-[#0C1018]/60 border border-slate-800/60 rounded-xl p-4 flex flex-col justify-between">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                    Book Calls
+                  </span>
+                  <span className="text-2xl font-bold text-slate-100 mt-2 font-mono">
+                    {events.filter(e => e.event === "recommendation_selected" && e.payload?.type === "BOOK_CALL").length}
+                  </span>
+                </div>
               </div>
             )}
           </section>

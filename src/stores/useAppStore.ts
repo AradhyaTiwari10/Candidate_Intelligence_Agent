@@ -26,6 +26,7 @@ import { deduplicateRecords, filterMemoryByCandidate } from "@/features/memory/m
 import { runMultiAgentReview } from "@/features/multi-agent/multi-agent-orchestrator";
 import { AgentResult } from "@/features/multi-agent/agent-result";
 import { CoordinatorRecommendation } from "@/features/multi-agent/coordinator-agent";
+import { trackEvent } from "@/features/analytics/analytics";
 
 
 interface AppState {
@@ -369,6 +370,22 @@ export const useAppStore = create<AppState>()(
       coordinatorRecommendation = multiAgentRaw.find(
         (r): r is CoordinatorRecommendation => r.agent === "COORDINATOR"
       ) ?? null;
+
+      trackEvent("multi_agent_review_completed", {
+        resultCount: multiAgentResults.length,
+      });
+
+      if (coordinatorRecommendation) {
+        trackEvent("recommendation_selected", {
+          type: coordinatorRecommendation.recommendationType,
+        });
+
+        if (coordinatorRecommendation.detectedDisagreements.length > 0) {
+          trackEvent("coordinator_disagreement_detected", {
+            count: coordinatorRecommendation.detectedDisagreements.length,
+          });
+        }
+      }
     } catch (err: any) {
       console.error("Multi-Agent Review failed:", err);
       multiAgentResults = [];
@@ -435,6 +452,8 @@ export const useAppStore = create<AppState>()(
       coordinatorRecommendation,
       analysisError,
     });
+
+    trackEvent("candidate_processed");
   },
 
   // Milestone 7 actions implementation
